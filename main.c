@@ -192,9 +192,10 @@ void AES_256_Key_Expansion (const unsigned char *userkey,
     Key_Schedule[14]=temp1;
 }
 
-__m128i AES_enc(const unsigned char* in,
+void AES_enc(const unsigned char* in,
              const char *key, //pointer to the expanded key schedule
-             int number_of_rounds) //number of AES rounds 10,12 or 14
+             int number_of_rounds, //number of AES rounds 10,12 or 14
+             unsigned char *out) //pointer to the CIPHERTEXT buffer
 
 {
     __m128i tmp;
@@ -205,7 +206,8 @@ __m128i AES_enc(const unsigned char* in,
         tmp = _mm_aesenc_si128 (tmp,((__m128i*)key)[j]);
     }
     tmp = _mm_aesenclast_si128 (tmp,((__m128i*)key)[j]);
-    return tmp;
+    _mm_storeu_si128 ((__m128i*)out,tmp);
+    /*return tmp;*/
 }
 
 __m128i AES_dec(const unsigned char* in,
@@ -237,14 +239,14 @@ void AES_ECB_encrypt(const unsigned char *in, //pointer to the PLAINTEXT
     else
         length = length/16;
     for(i=0; i < length; i++){
-        tmp = AES_enc(in + i * 16, key, number_of_rounds);
+        AES_enc(in + i * 16, key, number_of_rounds, out + i * 16);
         /*tmp = _mm_loadu_si128 (&((__m128i*)in)[i]);*/
         /*tmp = _mm_xor_si128 (tmp,((__m128i*)key)[0]);*/
         /*for(j=1; j <number_of_rounds; j++){*/
         /*tmp = _mm_aesenc_si128 (tmp,((__m128i*)key)[j]);*/
         /*}*/
         /*tmp = _mm_aesenclast_si128 (tmp,((__m128i*)key)[j]);*/
-        _mm_storeu_si128 (&((__m128i*)out)[i],tmp);
+        /*_mm_storeu_si128 (&((__m128i*)out)[i],tmp);*/
     }
 }
 
@@ -408,11 +410,11 @@ void AES_CTR_encrypt (const unsigned char *in,
 int main()
 {
     long length = 16;
-    /*unsigned char* in = read_file("datos.txt", &length);*/
+    unsigned char* in = read_file("datos.txt", &length);
 
     time_t t;
     unsigned char out[length];
-    unsigned char in[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    /*unsigned char in[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};*/
     unsigned char ivec[16] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char iv[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char nonce[4] = {0x80, 0x00, 0x00, 0x00};
