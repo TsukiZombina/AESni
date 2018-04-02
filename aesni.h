@@ -1,13 +1,9 @@
 #ifndef AESNI_H
 #define AESNI_H
 
-#include <stdio.h>
 #include <wmmintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
-
-#define AES128_ROUNDS 10
-#define AES256_ROUNDS 14
 
 #define cpuid(func,ax,bx,cx,dx)\
     __asm__ __volatile__ ("cpuid":\
@@ -22,20 +18,6 @@ int Check_CPU_support_AES()
     unsigned int a,b,c,d;
     cpuid(1, a,b,c,d);
     return (c & 0x2000000);
-}
-
-void print128_num(__m128i var) 
-{
-    int64_t *v64val = (int64_t*) &var;
-    printf("%.16lx%.16lx\n", v64val[0], v64val[1]);
-}
-
-void printhex(const unsigned char *out, long length) {
-    for(int i = 0; i < length; i++)
-    {
-        printf("%02x", out[i]);
-    }
-    printf("\n");
 }
 
 inline __m128i AES_128_ASSIST(__m128i temp1, __m128i temp2)
@@ -236,7 +218,7 @@ void AES_enc(const unsigned char* in,
     int j;
     tmp = _mm_loadu_si128 (&((__m128i*)in)[0]);
     tmp = _mm_xor_si128 (tmp,((__m128i*)key)[0]);
-    for(j=1; j <number_of_rounds; j++){
+    for(j = 1; j <number_of_rounds; j++){
         tmp = _mm_aesenc_si128 (tmp,((__m128i*)key)[j]);
     }
     tmp = _mm_aesenclast_si128 (tmp,((__m128i*)key)[j]);
@@ -246,18 +228,19 @@ void AES_enc(const unsigned char* in,
 
 __m128i AES_dec(const unsigned char* in,
              const char *key, //pointer to the expanded key schedule
-             int number_of_rounds) //number of AES rounds 10,12 or 14
-
+             int number_of_rounds, //number of AES rounds 10,12 or 14
+             unsigned char *out) //pointer to the CIPHERTEXT buffer
 {
     __m128i tmp;
     int j;
     tmp = _mm_loadu_si128 (&((__m128i*)in)[0]);
     tmp = _mm_xor_si128 (tmp,((__m128i*)key)[10]);
-    for(j=number_of_rounds - 1; j > 0; j--) {
+    for(j = number_of_rounds - 1; j > 0; j--) {
         tmp = _mm_aesdec_si128 (tmp,_mm_aesimc_si128(((__m128i*)key)[j]));
     }
     tmp = _mm_aesdeclast_si128 (tmp,((__m128i*)key)[j]);
-    return tmp;
+    _mm_storeu_si128 ((__m128i*)out,tmp);
+    //return tmp;
 }
 
 void AES_ECB_encrypt(const unsigned char *in, //pointer to the PLAINTEXT
@@ -297,14 +280,14 @@ void AES_ECB_decrypt(const unsigned char *in, //pointer to the CIPHERTEXT
     else
         length = length/16;
     for(i=0; i < length; i++){
-        tmp = AES_dec(in + i * 16, key, number_of_rounds);
+        AES_dec(in + i * 16, key, number_of_rounds, out + i * 16);
         /*tmp = _mm_loadu_si128 (&((__m128i*)in)[i]);*/
         /*tmp = _mm_xor_si128 (tmp,((__m128i*)key)[10]);*/
         /*for(j=1; j <number_of_rounds; j++){*/
         /*tmp = _mm_aesdec_si128 (tmp,((__m128i*)key)[j]);*/
         /*}*/
         /*tmp = _mm_aesdeclast_si128 (tmp,((__m128i*)key)[j]);*/
-        _mm_storeu_si128 (&((__m128i*)out)[i],tmp);
+        //_mm_storeu_si128 (&((__m128i*)out)[i],tmp);
     }
 }
 
@@ -441,7 +424,63 @@ void AES_CTR_encrypt (const unsigned char *in,
     }
 }
 
-void double_AES() {
+void double_AES_enc(const unsigned char* in,
+        unsigned char* out, 
+        unsigned long length, 
+        const char* key0,
+        const char* key1,
+        const unsigned char* userkey0, 
+        const unsigned char* userkey1,
+        unsigned int number_of_rounds) 
+{
+    AES_128_Key_Expansion(userkey0, (unsigned char*)key0);
+    AES_128_Key_Expansion(userkey1, (unsigned char*)key1);
+    
+    AES_ECB_encrypt(in, out, length, key0, number_of_rounds);
+    /*printf("C0:\n");*/
+    /*printhex(out, length); */
+    AES_ECB_encrypt(out, out, length, key1, number_of_rounds);
+}
+
+void double_AES_dec(const unsigned char* in,
+        unsigned char* out, 
+        unsigned long length, 
+        const char* key0,
+        const char* key1,
+        const unsigned char* userkey0, 
+        const unsigned char* userkey1,
+        unsigned int number_of_rounds) 
+{
+    AES_128_Key_Expansion(userkey0, (unsigned char*)key0);
+    AES_128_Key_Expansion(userkey1, (unsigned char*)key1);
+    
+    AES_ECB_decrypt(in, out, length, key1, number_of_rounds);
+    /*printf("\nC0':\n");*/
+    /*printhex(out, length); */
+    /*printf("\n");*/
+    AES_ECB_decrypt(out, out, length, key0, number_of_rounds);
+}
+
+void AES128_enc(const unsigned char* in,
+        unsigned char* out, 
+        unsigned long length, 
+        const char* key,
+        const unsigned char* userkey, 
+        unsigned int number_of_rounds) 
+{
+    AES_128_Key_Expansion(userkey, (unsigned char*)key);
+    AES_ECB_encrypt(in, out, length, key, number_of_rounds);
+}
+
+void AES128_dec(const unsigned char* in,
+        unsigned char* out, 
+        unsigned long length, 
+        const char* key,
+        const unsigned char* userkey, 
+        unsigned int number_of_rounds) 
+{
+    AES_128_Key_Expansion(userkey, (unsigned char*)key);
+    AES_ECB_decrypt(in, out, length, key, number_of_rounds);
 }
 
 #endif // AESNI_H
