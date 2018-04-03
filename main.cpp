@@ -10,18 +10,20 @@
 
 int main()
 {
-    long length = 16;
-    long size = 2;
+    long length = 10;
+    long size = 1024;
     /*unsigned char* in = read_file("datos.txt", &length);*/
     
     unsigned char out[length];
-    std::vector<std::array<unsigned char, 16>> ciphers(size);
+    std::vector<std::pair<std::array<unsigned char, 16>, std::array<unsigned char, 16>>> keyciphers(size);
+    array<unsigned char, 16> mask = {};
+    array<unsigned char, 16> arrkey1;
     unsigned char in[16] = {0x30, 0x03, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char ivec[16] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char iv[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     unsigned char nonce[4] = {0x80, 0x00, 0x00, 0x00};
-    const char key0[176] = "";
-    const char key1[176] = "";
+    char key0[176] = "";
+    char key1[176] = "";
     unsigned char userkey0[16] = "";
     unsigned char userkey1[16] = "";
     unsigned int number_of_rounds = 10;
@@ -50,11 +52,17 @@ int main()
     write_file("output.txt", out, length);
 
     /******** Problema 2 *********/
-    /*for (long i = 0; i < size; i++) {*/
-        //AES128_enc(in, out, length, key0, userkey0, number_of_rounds);
-        //std::copy(out, out + 16, ciphers[i].begin());
-		//printf("Cifra %d\n", i);
-		//printhex(ciphers[i].data(), 16);
-    /*}*/
+    copy(userkey1, userkey1 + 16, arrkey1.begin());
+    generateMask(mask, length);
+    for (long i = 0; i < size; i++) {
+        truncateKey(arrkey1, mask, i);
+        AES128_enc(in, out, length, key1, arrkey1.data(), number_of_rounds);
+        std::copy(out, out + 16, keyciphers[i].first.begin());
+        keyciphers[i].second = arrkey1;
+		// printf("Cifra %ld\n", i);
+		// printhex(keyciphers[i].first.data(), 16);
+        // printf(" ");
+        // printhex(keyciphers[i].second.data(), 16);
+        // printf("\n");
+    }
 }
-

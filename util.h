@@ -1,14 +1,14 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <array>
 #include <time.h>
-#include <wmmintrin.h>
 #include <cstdio>
 #include <vector>
-#include <array>
+#include <stdio.h>
+#include <stdlib.h>
 #include <algorithm>
+#include <wmmintrin.h>
 
 using std::vector;
 using std::array;
@@ -21,7 +21,7 @@ void print128_num(__m128i var)
 }
 
 void printhex(const unsigned char *out, long length) {
-    for(int i = 0; i < length; i++)
+    for(long i = 0; i < length; i++)
     {
         printf("%02x", out[i]);
     }
@@ -60,19 +60,19 @@ void random_keygen(unsigned char* userkey0, unsigned char* userkey1) {
     time_t t;
     srand((unsigned) time(&t));
 
-    for (int i = 0; i < 16; i++) {
-        userkey0[i] = rand() % 2;
-        userkey1[i] = rand() % 2;
+    for (long i = 0; i < 16; i++) {
+        userkey0[i] = rand() % 0x100;
+        userkey1[i] = rand() % 0x100;
     }
 }
 
-void generateMask(array<unsigned char, 16>& mask, int m)
+void generateMask(array<unsigned char, 16>& mask, long m)
 {
-    unsigned int p = m / 8;
-    unsigned int q = m % 8;
+    unsigned long p = m / 8;
+    unsigned long q = m % 8;
 
     // Set mask
-    for(unsigned int i = 0; i < 16; i++)
+    for(long i = 0; i < 16; i++)
     {
         if(i < 16 - p)
         {
@@ -86,30 +86,22 @@ void generateMask(array<unsigned char, 16>& mask, int m)
     }
 }
 
-void truncateKey(array<unsigned char, 16>& key, const array<unsigned char, 16>& mask, unsigned int index)
+void truncateKey(array<unsigned char, 16>& key, const array<unsigned char, 16>& mask, unsigned long index)
 {
-    for(unsigned int i = 0; i < 16; i++)
+    for(long i = 0; i < 16; i++)
     {
         key[i] = key[i] & mask[i];
     }
 
-    unsigned int p = index / 255;
-    unsigned int q = index % 255;
+    unsigned char* bits = (unsigned char*)&index;
 
-    printf("\np = %d, q = %d\n", p, q);
-
-    for(unsigned int i = 0; i < 16; i++)
+    for(long i = 0; i < 4; i++)
     {
-        if(i > 16 - p)
-        {
-            key[i] = 0xFF;
-        }
-
-        if(i == 16 - p - 1)
-        {
-            key[i] += q;
-        }
+        key[15 - i] = key[15 -i] | *(bits + i);
+        //printf("%02x", *(bits + i));
     }
+
+    printf("\n");
 }
 
 #endif // UTIL_H
