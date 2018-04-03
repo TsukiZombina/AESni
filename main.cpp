@@ -39,7 +39,7 @@ int main()
     /*AES_CFB_decrypt(out, m, ivec, length, key, number_of_rounds);*/
     /*AES_CTR_encrypt(out, m, iv, nonce, length, key, number_of_rounds);*/ 
 
-    /******** Problema 1 *********/    
+    /******** Problem 1 *********/    
     random_keygen(userkey0, userkey1);
     double_AES_enc(in, out, length, key0, key1, userkey0, userkey1, number_of_rounds);
     /*printf("C:\n");*/
@@ -51,7 +51,8 @@ int main()
     /*printf("\n");*/
     write_file("output.txt", out, length);
 
-    /******** Problema 2 *********/
+    /******** Problem 2 *********/
+    /*******Generate Table******/
     copy(userkey1, userkey1 + 16, arrkey1.begin());
     generateMask(mask, length);
     for (long i = 0; i < size; i++) {
@@ -59,10 +60,14 @@ int main()
         AES128_enc(in, out, length, key1, arrkey1.data(), number_of_rounds);
         std::copy(out, out + 16, keyciphers[i].first.begin());
         keyciphers[i].second = arrkey1;
-		// printf("Cifra %ld\n", i);
+        //printf("Cifra %ld\n", i);
 		// printhex(keyciphers[i].first.data(), 16);
         // printf(" ");
         // printhex(keyciphers[i].second.data(), 16);
         // printf("\n");
     }
+    /*******Binary Search*******/
+    std::sort(keyciphers.begin(), keyciphers.end());
+
+    
 }

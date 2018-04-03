@@ -66,13 +66,13 @@ void random_keygen(unsigned char* userkey0, unsigned char* userkey1) {
     }
 }
 
-void generateMask(array<unsigned char, 16>& mask, long m)
+void generateMask(array<unsigned char, 16>& mask, unsigned long m)
 {
     unsigned long p = m / 8;
     unsigned long q = m % 8;
 
     // Set mask
-    for(long i = 0; i < 16; i++)
+    for(unsigned long i = 0; i < 16; i++)
     {
         if(i < 16 - p)
         {
@@ -88,20 +88,18 @@ void generateMask(array<unsigned char, 16>& mask, long m)
 
 void truncateKey(array<unsigned char, 16>& key, const array<unsigned char, 16>& mask, unsigned long index)
 {
-    for(long i = 0; i < 16; i++)
+    for(unsigned long i = 0; i < 16; i++)
     {
         key[i] = key[i] & mask[i];
     }
 
     unsigned char* bits = (unsigned char*)&index;
 
-    for(long i = 0; i < 4; i++)
+    for(unsigned long i = 0; i < 4; i++)
     {
         key[15 - i] = key[15 -i] | *(bits + i);
         //printf("%02x", *(bits + i));
     }
-
-    printf("\n");
 }
 
 #endif // UTIL_H
