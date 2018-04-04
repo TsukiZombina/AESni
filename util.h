@@ -5,6 +5,7 @@
 #include <time.h>
 #include <cstdio>
 #include <vector>
+#include <utility>
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
@@ -102,4 +103,15 @@ void truncateKey(array<unsigned char, 16>& key, const array<unsigned char, 16>& 
     }
 }
 
+bool sortByCipher(const std::pair<array<unsigned char, 16>, array<unsigned char, 16>> &a,
+              const std::pair<array<unsigned char, 16>, array<unsigned char, 16>> &b)
+{
+    for(unsigned long i = 0; i < a.first.size(); i++) {
+        if (a.first[i] != b.first[i]) {
+            return true;
+            break;
+        }
+    }
+    return false;
+}
 #endif // UTIL_H
