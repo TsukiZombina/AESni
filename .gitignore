@@ -1,4 +1,3 @@
 output.jpg
-output.txt
-cifras.txt
+*.txt
 main

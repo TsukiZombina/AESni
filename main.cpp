@@ -14,7 +14,7 @@ using std::unordered_map;
 #define AES256_ROUNDS 16
 
 typedef std::pair<std::array<unsigned char, 16>, std::array<unsigned char, 16>> cypherKeyPair;
-
+typedef std::unordered_map<std::array<unsigned char, 16>, std::array<unsigned char, 16>> cypherKeyMap;
 struct ArrayHasher {
     std::size_t operator()(const std::array<unsigned char, 16>& a) const {
         std::size_t h = 0;
@@ -43,8 +43,8 @@ void printTable(const unordered_map<array<unsigned char, 16>, array<unsigned cha
 
 int main()
 {
-    unsigned long length = 10;
-    unsigned long size = 1024;
+    unsigned long length = 3;
+    unsigned long size = 8;
     unsigned int number_of_rounds = AES128_ROUNDS;
 
     char key0[176] = "";
@@ -91,11 +91,10 @@ int main()
 
     /******** Problem 2 *********/
     generateMask(mask, length);
-
+    /*********** A **************/
     /*std::cout << "K1:" << std::endl;*/
     /*printhex(userkey1, 16);*/
     copy(userkey1, userkey1 + 16, arrkey1.begin());
-
     for (unsigned long i = 0; i < size; i++) {
         truncateKey(arrkey1, mask, i);
         AES128_dec(C, out, length, key1, arrkey1.data(), number_of_rounds);
@@ -178,23 +177,23 @@ int main()
         //printf(" ");
         //printhex(keyciphers2[i].second.data(), 16);
         //printf("\n");
-    /*}*/
-
+    //}*/
+    /********** B ***********/
     unordered_map<array<unsigned char, 16>, array<unsigned char, 16>, ArrayHasher> cipherKeyTable;
-
-    for(int i = 0; i < keyciphers.size(); i++)
+ 
+    for(unsigned long i = 0; i < keyciphers.size(); i++)
     {
         cipherKeyTable.insert({keyciphers[i].first, keyciphers[i].second});
     }
-
+ 
     for(unsigned long i = 0; i < size; i++)
     {
         truncateKey(arrkey0, mask, i);
         AES128_enc(B, out, length, key0, arrkey0.data(), number_of_rounds);
         std::copy(out, out + 16, cipher.begin());
-
+ 
         auto p = cipherKeyTable.find(cipher);
-
+ 
         if(p != cipherKeyTable.end())
         {
             cout << "\nCipher found:" << endl;
@@ -206,6 +205,5 @@ int main()
             break;
         }
     }
-
     return 0;
 }
