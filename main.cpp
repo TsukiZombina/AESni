@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_map>
 #include "aesni.h"
 #include "util.h"
 
@@ -7,18 +8,45 @@ using std::binary_search;
 using std::lower_bound;
 using std::endl;
 using std::sort;
+using std::unordered_map;
 
 #define AES128_ROUNDS 10
 #define AES256_ROUNDS 16
 
 typedef std::pair<std::array<unsigned char, 16>, std::array<unsigned char, 16>> cypherKeyPair;
 
+struct ArrayHasher {
+    std::size_t operator()(const std::array<unsigned char, 16>& a) const {
+        std::size_t h = 0;
+
+        for (auto e : a) {
+            h ^= std::hash<unsigned char>{}(e)  + 0x9e3779b9 + (h << 6) + (h >> 2); 
+        }
+        return h;
+    }   
+};
+
+void printTable(const unordered_map<array<unsigned char, 16>, array<unsigned char, 16>, ArrayHasher>& table)
+{
+    // Print data in table
+    cout << "\nData in table" << endl;
+
+    for(auto& p: table)
+    {
+        cout << "Cipher = ";
+        printhex(p.first.data(), 16);
+        cout << ", Key = ";
+        printhex(p.second.data(), 16);
+        printf("\n");
+    }
+}
+
 int main()
 {
-    unsigned long length = 24;
-    unsigned long size = 16777216;
+    unsigned long length = 10;
+    unsigned long size = 1024;
     unsigned int number_of_rounds = AES128_ROUNDS;
-    
+
     char key0[176] = "";
     char key1[176] = "";
     unsigned char userkey0[16] = "";
@@ -37,7 +65,7 @@ int main()
     /*unsigned char ivec[16] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};*/
     //unsigned char iv[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     /*unsigned char nonce[4] = {0x80, 0x00, 0x00, 0x00};*/
-    
+
     /******** Operand modes *********/
     AES_ECB_encrypt(in, out, length, key0, number_of_rounds);
     //AES_CBC_encrypt(in, out, ivec, length, key0, number_of_rounds);
@@ -89,7 +117,7 @@ int main()
                          {
                             std::string a((const char*)lhs.first.data(), 16);
                             std::string b((const char*)rhs.first.data(), 16);
- 
+
                             return a < b;
                          });
 
@@ -102,7 +130,7 @@ int main()
         //printhex(keyciphers[i].second.data(), 16);
         //printf("\n");
     /*}*/
- 
+
     copy(userkey0, userkey0 + 16, arrkey0.begin());
 
     for(unsigned long i = 0; i < size; i++)
@@ -111,7 +139,7 @@ int main()
         AES128_enc(B, out, length, key0, arrkey0.data(), number_of_rounds);
         /*std::copy(out, out + 16, keyciphers2[i].first.begin());*/
         /*keyciphers2[i].second = arrkey0;*/
-        std::copy(out, out + 16, cipher.begin()); 
+        std::copy(out, out + 16, cipher.begin());
 
         auto p = make_pair(cipher, keyciphers[0].second);
         /*cout << "\nCipher requested: " << endl;*/
@@ -121,7 +149,7 @@ int main()
                          {
                             std::string a((const char*)lhs.first.data(), 16);
                             std::string b((const char*)rhs.first.data(), 16);
- 
+
                             return a < b;
                          });
 
@@ -151,5 +179,33 @@ int main()
         //printhex(keyciphers2[i].second.data(), 16);
         //printf("\n");
     /*}*/
+
+    unordered_map<array<unsigned char, 16>, array<unsigned char, 16>, ArrayHasher> cipherKeyTable;
+
+    for(int i = 0; i < keyciphers.size(); i++)
+    {
+        cipherKeyTable.insert({keyciphers[i].first, keyciphers[i].second});
+    }
+
+    for(unsigned long i = 0; i < size; i++)
+    {
+        truncateKey(arrkey0, mask, i);
+        AES128_enc(B, out, length, key0, arrkey0.data(), number_of_rounds);
+        std::copy(out, out + 16, cipher.begin());
+
+        auto p = cipherKeyTable.find(cipher);
+
+        if(p != cipherKeyTable.end())
+        {
+            cout << "\nCipher found:" << endl;
+            printhex((*p).first.data(), 16);
+            cout << "\nKey1 found is: " << endl;
+            printhex((*p).second.data(), 16);
+            cout << "\nKey0 used is: " << endl;
+            printhex(arrkey0.data(), 16);
+            break;
+        }
+    }
+
     return 0;
 }
